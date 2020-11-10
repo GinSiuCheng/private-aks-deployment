@@ -1,3 +1,4 @@
+# Overview 
 The following project demonstrates deployment of a private AKS cluster within a hub-spoke model with custom DNS. It consists of: 
 1. Hub VNET with:
     1. Azure Bastion 
@@ -9,3 +10,12 @@ The following project demonstrates deployment of a private AKS cluster within a 
     1. Custom DNS pointed BIND DNS
     2. Private AKS Cluster with UDR to Azure Firewall for Egress
  
+# Module Design Principles:
+As there are multiple ways to create TF modules and instantiate environment instances. We structured the repository in the following way: 
+1. Single resources and their dependencies are grouped into a module 
+2. Architecture templates are grouped into a module
+3. There is only 2 degrees of nesting max from root: main.tf --> modules/single_region_hub_spoke --> modules/azure_firewall
+
+# Generate SSH Keys for VM Access
+To generate an ssh key pair for VM access, you can leverage the following command: 
+ssh-keygen -m PEM -t rsa -b 4096 -f "key name"

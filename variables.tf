@@ -21,3 +21,12 @@ variable "azurebastion_addr_prefix" {}
 variable "acr_addr_prefix" {}
 variable "acr_name" {}
 variable "acr_georeplication_locations" {}
+
+# BIND DNS module 
+variable "bind_dns_name" {}
+variable "bind_dns_addr_prefix" {}
+variable "bind_private_ip_addr" {}
+variable "bind_ssh_source_addr_prefixes" {}
+variable "vm_size" {}
+variable "admin_username" {}
+variable "pub_key_name" {}

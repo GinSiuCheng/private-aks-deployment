@@ -1,0 +1,22 @@
+acl allowedclients { 
+    10.1.0.0/16;    # should use tfvar hub range
+    10.2.0.0/16;    # should use tfvar spoke range
+    localhost; 
+    localnets;
+};
+
+options { 
+    directory "/var/cache/bind"; 
+
+    recursion yes; 
+    allow-query {   allowedclients; }; 
+
+    forwarders { 168.63.129.16; };
+    forward only; 
+
+    dnssec-enable yes; 
+    dnssec-validation yes; 
+
+    auth-nxdomain no; 
+    listen-on-v6 {  any;    }; 
+};

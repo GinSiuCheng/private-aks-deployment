@@ -13,6 +13,7 @@ resource "azurerm_virtual_network" "spoke" {
     location                    = var.location 
     resource_group_name         = var.resource_group_name
     address_space               = [var.spoke_vnet_addr_prefix]
+    dns_servers                 = [var.bind_private_ip_addr]
     tags                        = var.tags
 }
 
@@ -49,4 +50,19 @@ module "azure_bastion" {
     azurebastion_name           = var.azurebastion_name
     azurebastion_vnet_name      = azurerm_virtual_network.hub.name
     azurebastion_addr_prefix    = var.azurebastion_addr_prefix
+}
+
+# BIND DNS
+module "bind_dns" { 
+    source                          = "../bind_dns"
+    resource_group_name             = var.resource_group_name
+    location                        = var.location
+    bind_dns_name                   = var.bind_dns_name
+    bind_vnet_name                  = azurerm_virtual_network.hub.name
+    bind_dns_addr_prefix            = var.bind_dns_addr_prefix
+    bind_private_ip_addr            = var.bind_private_ip_addr
+    bind_ssh_source_addr_prefixes   = var.bind_ssh_source_addr_prefixes
+    vm_size                         = var.vm_size
+    admin_username                  = var.admin_username
+    pub_key_name                    = var.pub_key_name
 }

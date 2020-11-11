@@ -27,3 +27,8 @@ output "spoke_address_space" {
     description     = "Spoke Address Space"
     value           = azurerm_virtual_network.spoke.address_space
 }
+
+output "azure_firewall_private_ip" { 
+    description     = "Azure FW Private IP"
+    value           = module.azure_firewall.ip
+}

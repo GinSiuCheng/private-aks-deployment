@@ -89,3 +89,8 @@ variable "aks_docker_bridge_cidr" {
     description = "AKS Docker Bridge CIDR, default setting is 172.17.0.1/16 in this module."
     default     = "172.17.0.1/16"
 }
+
+variable "azure_fw_private_ip" { 
+    type        = string 
+    description = "Azure FW Private IP"
+}

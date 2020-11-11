@@ -3,13 +3,13 @@ terraform {
   required_providers {
     azurerm = {
       source = "hashicorp/azurerm"
-      version = ">= 2.26"
+      version = ">= 2.35"
     }
   }
 }
 
 provider "azurerm" {
-    version = "=2.32.0"
+    version = "=2.35.0"
     features {} 
 }
 
@@ -64,6 +64,9 @@ module "private_acr" {
     acr_addr_prefix                 = var.acr_addr_prefix
     acr_name                        = var.acr_name
     acr_georeplication_locations    = var.acr_georeplication_locations
+    depends_on = [ 
+      module.hub_spoke
+    ]
 }
 
 # Private AKS Cluster 
@@ -86,6 +89,10 @@ module "private_aks" {
     aks_service_cidr                = var.aks_service_cidr
     aks_dns_service_ip              = var.aks_dns_service_ip
     aks_docker_bridge_cidr          = var.aks_docker_bridge_cidr
+    azure_fw_private_ip             = module.hub_spoke.azure_firewall_private_ip
+    depends_on = [ 
+      module.hub_spoke
+    ]
 }
 
 resource "azurerm_role_assignment" "private_aks_acr" {
@@ -93,4 +100,8 @@ resource "azurerm_role_assignment" "private_aks_acr" {
     role_definition_name              = "AcrPull"
     principal_id                      = module.private_aks.private_aks_msi_id
     skip_service_principal_aad_check  = true
+    depends_on = [
+      module.private_acr, 
+      module.private_aks
+    ]
 }

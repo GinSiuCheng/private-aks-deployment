@@ -18,10 +18,52 @@ resource "azurerm_firewall" "azure_firewall_instance" {
     name                        = var.azurefw_name
     location                    = var.location
     resource_group_name         = var.resource_group_name
-
+    dns_servers                 = [ 
+        var.bind_private_ip_addr 
+    ]
     ip_configuration {
         name                    = "configuration"
         subnet_id               = azurerm_subnet.azure_firewall.id 
         public_ip_address_id    = azurerm_public_ip.azure_firewall.id
+    }
+}
+
+resource "azurerm_firewall_network_rule_collection" "private_aks" {
+    name                = "PrivateAKSNetworkRules"
+    azure_firewall_name = azurerm_firewall.azure_firewall_instance.name
+    resource_group_name = var.resource_group_name
+    priority            = 100
+    action              = "Allow"
+    rule { 
+        name = "NTP"
+        source_addresses  = [ 
+            "*" 
+        ]
+        destination_fqdns = [
+            "ntp.ubuntu.com"
+        ]
+        destination_ports = [ 
+            "123" 
+        ]
+        protocols = [ 
+            "UDP" 
+        ]
+    }
+}
+
+resource "azurerm_firewall_application_rule_collection" "private_aks" { 
+    name                = "PrivateAKSAppRules"
+    azure_firewall_name = azurerm_firewall.azure_firewall_instance.name
+    resource_group_name = var.resource_group_name
+    priority            = 100
+    action              = "Allow"
+    rule {
+        name = "AKSService_FQDNTag"
+        source_addresses = [ 
+            "*" 
+        ]
+        fqdn_tags = [ 
+            "AzureKubernetesService" 
+        ]
     }
 }

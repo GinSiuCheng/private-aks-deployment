@@ -1,5 +1,11 @@
 variable "resource_group_name" {}
 variable "location" {}
+variable "tags" {
+    type        = map 
+    default     = { 
+        Environment = "development"
+    }
+}
 
 variable "azurefw_name" {
     type        = string

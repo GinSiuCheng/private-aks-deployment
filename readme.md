@@ -14,8 +14,11 @@ The following project demonstrates deployment of a private AKS cluster within a 
 As there are multiple ways to create TF modules and instantiate environment instances. We structured the repository in the following way: 
 1. Single resources and their dependencies are grouped into a module 
 2. Architecture templates are grouped into a module
-3. There is only 2 degrees of nesting max from root: main.tf --> modules/single_region_hub_spoke --> modules/azure_firewall
+3. There is only 2 degrees of nesting max: root (main.tf) --> module --> module
 
-# Generate SSH Keys for VM Access
+# Generate SSH Keys for VM or AKS Access
 To generate an ssh key pair for VM access, you can leverage the following command: 
 ssh-keygen -m PEM -t rsa -b 4096 -f "key name"
+
+# Build/Terraform Environment Dependencies
+You will need the jq lib in a linux/windows context. Install on linux with sudo apt-get install jq

@@ -27,6 +27,21 @@ variable "bind_dns_name" {}
 variable "bind_dns_addr_prefix" {}
 variable "bind_private_ip_addr" {}
 variable "bind_ssh_source_addr_prefixes" {}
-variable "vm_size" {}
+variable "bind_vm_size" {}
 variable "admin_username" {}
 variable "pub_key_name" {}
+
+# Private AKS module 
+variable "aks_name" {}
+variable "aks_subnet_addr_prefix" {}
+variable "aks_dns_prefix" {}
+variable "aks_k8s_version" {}
+variable "aks_admin_username" {}
+variable "aks_pub_key_name" {}
+variable "aks_default_pool_name" {}
+variable "aks_default_pool_node_count" {}
+variable "aks_default_pool_vm_size" {}
+variable "aks_default_pool_os_disk_size" {}
+variable "aks_service_cidr" {}
+variable "aks_dns_service_ip" {}
+variable "aks_docker_bridge_cidr" {}

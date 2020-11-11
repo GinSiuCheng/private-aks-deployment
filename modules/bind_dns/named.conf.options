@@ -1,6 +1,6 @@
 acl allowedclients { 
-    10.1.0.0/16;    # should use tfvar hub range
-    10.2.0.0/16;    # should use tfvar spoke range
+    10.1.0.0/16;    
+    10.2.0.0/16;    
     localhost; 
     localnets;
 };

@@ -1,6 +1,5 @@
 variable "resource_group_name" {}
 variable "location" {} 
-
 variable "tags" {
     type        = map 
     default     = { 
@@ -76,7 +75,7 @@ variable "bind_ssh_source_addr_prefixes" {
     description = "BIND SSH Source Addr Prefixes for NSG Rule"
 }
 
-variable "vm_size" { 
+variable "bind_vm_size" { 
     type        = string
     description = "Specify size of BIND DNS Instance. Defaults to Standard_DS3_v2"
     default     = "Standard_DS3_v2"

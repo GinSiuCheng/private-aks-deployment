@@ -42,8 +42,16 @@ module "hub_spoke" {
     bind_private_ip_addr            = var.bind_private_ip_addr
     bind_ssh_source_addr_prefixes   = var.bind_ssh_source_addr_prefixes
     bind_vm_size                    = var.bind_vm_size
-    admin_username                  = var.admin_username
-    pub_key_name                    = var.pub_key_name
+    bind_admin_username             = var.bind_admin_username
+    bind_pub_key_name               = var.bind_pub_key_name
+
+    jump_box_name                       = var.jump_box_name
+    jump_box_addr_prefix                = var.jump_box_addr_prefix
+    jump_box_private_ip_addr            = var.jump_box_private_ip_addr
+    jump_box_ssh_source_addr_prefixes   = var.jump_box_ssh_source_addr_prefixes
+    jump_box_vm_size                    = var.jump_box_vm_size
+    jump_box_admin_username             = var.jump_box_admin_username
+    jump_box_pub_key_name               = var.jump_box_pub_key_name
 }
 
 # Azure Container Registry, Azure Private DNS and Hub Private Endpoint Subnet
@@ -78,4 +86,11 @@ module "private_aks" {
     aks_service_cidr                = var.aks_service_cidr
     aks_dns_service_ip              = var.aks_dns_service_ip
     aks_docker_bridge_cidr          = var.aks_docker_bridge_cidr
+}
+
+resource "azurerm_role_assignment" "private_aks_acr" {
+    scope                             = module.private_acr.acr_id
+    role_definition_name              = "AcrPull"
+    principal_id                      = module.private_aks.private_aks_msi_id
+    skip_service_principal_aad_check  = true
 }

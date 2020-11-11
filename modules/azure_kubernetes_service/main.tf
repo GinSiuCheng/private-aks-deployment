@@ -36,7 +36,7 @@ resource "azurerm_kubernetes_cluster" "private_aks" {
     linux_profile { 
         admin_username              = var.aks_admin_username
         ssh_key { 
-            key_data                = "${file("${var.aks_pub_key_name}")}"
+            key_data                = file(var.aks_pub_key_name)
         }
     }
 
@@ -55,4 +55,9 @@ resource "azurerm_kubernetes_cluster" "private_aks" {
         docker_bridge_cidr          = var.aks_docker_bridge_cidr
         load_balancer_sku           = "standard"
     }
+}
+
+data "azurerm_user_assigned_identity" "private_aks" {
+    name                            = "${azurerm_kubernetes_cluster.private_aks.name}-agentpool"
+    resource_group_name             = azurerm_kubernetes_cluster.private_aks.node_resource_group
 }

@@ -53,14 +53,14 @@ resource "azurerm_linux_virtual_machine" "bind" {
     resource_group_name         = var.resource_group_name
     location                    = var.location
     size                        = var.bind_vm_size
-    admin_username              = var.admin_username
+    admin_username              = var.bind_admin_username
     network_interface_ids = [ 
         azurerm_network_interface.bind.id
     ] 
 
     admin_ssh_key { 
-        username                = var.admin_username
-        public_key              = file("${var.pub_key_name}")
+        username                = var.bind_admin_username
+        public_key              = file(var.bind_pub_key_name)
     }
 
     os_disk { 

@@ -38,12 +38,12 @@ variable "bind_vm_size" {
     default     = "Standard_DS3_v2"
 }
 
-variable "admin_username" { 
+variable "bind_admin_username" { 
     type        = string 
     description = "BIND VM Username"
 }
 
-variable "pub_key_name" { 
+variable "bind_pub_key_name" { 
     type        = string 
     description = "Local public key name"
 }

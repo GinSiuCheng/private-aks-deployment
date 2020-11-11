@@ -28,8 +28,17 @@ variable "bind_dns_addr_prefix" {}
 variable "bind_private_ip_addr" {}
 variable "bind_ssh_source_addr_prefixes" {}
 variable "bind_vm_size" {}
-variable "admin_username" {}
-variable "pub_key_name" {}
+variable "bind_admin_username" {}
+variable "bind_pub_key_name" {}
+
+# Jump box module
+variable "jump_box_name" {}
+variable "jump_box_addr_prefix" {}
+variable "jump_box_private_ip_addr" {}
+variable "jump_box_ssh_source_addr_prefixes" {}
+variable "jump_box_vm_size" {}
+variable "jump_box_admin_username" {}
+variable "jump_box_pub_key_name" {}
 
 # Private AKS module 
 variable "aks_name" {}

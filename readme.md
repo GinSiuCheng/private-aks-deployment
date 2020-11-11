@@ -10,6 +10,8 @@ The following project demonstrates deployment of a private AKS cluster within a 
     1. VNET Custom DNS Servers pointed to BIND DNS
     2. Private AKS Cluster with UDR to Azure Firewall for Egress
 
+![Architecture Overview](hub-spoke-private-aks-udr.png)
+
 # Module Design Principles:
 As there are multiple ways to create TF modules and instantiate environment instances. We structured the repository in the following way: 
 1. Single resources and their dependencies are grouped into a module 

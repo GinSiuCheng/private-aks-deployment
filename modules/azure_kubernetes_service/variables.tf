@@ -22,7 +22,12 @@ variable "aks_subnet_addr_prefix" {
     description = "AKS Subnet Address Prefix"
 }
 
-variable "custom_dns_vnet_id" {
+variable "hub_vnet_id" {
+    type        = string
+    description = "VNET ID where the DNS resides"
+}
+
+variable "spoke_vnet_id" {
     type        = string
     description = "VNET ID where the DNS resides"
 }

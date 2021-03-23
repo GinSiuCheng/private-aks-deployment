@@ -31,7 +31,6 @@ resource "azurerm_container_registry" "acr_instance" {
     network_rule_set { 
         default_action = "Deny"
     }
-    georeplication_locations                        = var.acr_georeplication_locations
 }
 
 # ACR Private Endpoint 

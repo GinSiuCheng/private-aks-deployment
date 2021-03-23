@@ -32,8 +32,3 @@ variable "acr_name" {
     type        = string
     description = "Name of the ACR"
 }
-
-variable "acr_georeplication_locations" { 
-    type        = tuple([string])
-    description = "Georeplication locations for ACR, must be different from primary ACR location"
-}

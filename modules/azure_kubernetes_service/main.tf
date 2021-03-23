@@ -5,7 +5,7 @@ resource "azurerm_subnet" "private_aks" {
     resource_group_name                             = var.resource_group_name
     virtual_network_name                            = var.aks_vnet_name
     address_prefixes                                = [var.aks_subnet_addr_prefix]
-    enforce_private_link_endpoint_network_policies  = false
+    enforce_private_link_endpoint_network_policies  = true
 } 
 
 # Route table for AKS Subnet
@@ -28,19 +28,47 @@ resource "azurerm_subnet_route_table_association" "private_aks" {
     route_table_id  = azurerm_route_table.private_aks.id
 }
 
-resource "null_resource" "dns_zone_link" {
-  provisioner "local-exec" {
-    interpreter = ["bash"]
-    command = "modules/azure_kubernetes_service/dns-zone-link.sh"
-
-    environment = {
-      DNS_VNET                      = var.custom_dns_vnet_id 
-      AKS_RESOURCE_GROUP            = var.resource_group_name
-      AKS_CLUSTER_NAME              = var.aks_name
-    }
-  }
+# Private AKS Azure DNS 
+resource "azurerm_private_dns_zone" "private_aks" {
+    name                                            = "privatelink.${var.location}.azmk8s.io"
+    resource_group_name                             = var.resource_group_name
 }
 
+resource "azurerm_private_dns_zone_virtual_network_link" "hub_aks_zone_link" { 
+    name                                            = "hub_private_aks_dns_vnet_link"
+    resource_group_name                             = var.resource_group_name
+    private_dns_zone_name                           = azurerm_private_dns_zone.private_aks.name 
+    virtual_network_id                              = var.hub_vnet_id
+    registration_enabled                            = false
+}
+
+resource "azurerm_private_dns_zone_virtual_network_link" "spoke_aks_dns_link" { 
+    name                                            = "spoke_private_aks_dns_vnet_link"
+    resource_group_name                             = var.resource_group_name
+    private_dns_zone_name                           = azurerm_private_dns_zone.private_aks.name 
+    virtual_network_id                              = var.spoke_vnet_id
+    registration_enabled                            = false
+}
+
+# UserAssigned Identity
+data "azurerm_subscription" "primary" {}
+
+resource "azurerm_user_assigned_identity" "private_aks" {
+    name                                            = "private-aks-identity"
+    resource_group_name                             = var.resource_group_name
+    location                                        = var.location
+}
+
+resource "azurerm_role_assignment" "private_aks_role" {
+    scope                                           = azurerm_private_dns_zone.private_aks.id
+    role_definition_name                            = "Private DNS Zone Contributor"
+    principal_id                                    = azurerm_user_assigned_identity.private_aks.principal_id
+    depends_on = [
+        azurerm_private_dns_zone.private_aks
+    ]
+}
+
+# Private AKS Instantiation
 resource "azurerm_kubernetes_cluster" "private_aks" { 
     name                            = var.aks_name
     location                        = var.location 
@@ -48,10 +76,12 @@ resource "azurerm_kubernetes_cluster" "private_aks" {
     dns_prefix                      = var.aks_dns_prefix
     kubernetes_version              = var.aks_k8s_version
     private_cluster_enabled         = true 
+    private_dns_zone_id             = azurerm_private_dns_zone.private_aks.id
     node_resource_group             = "${var.aks_name}-node-rg"
 
     identity { 
-        type = "SystemAssigned"
+        type                                = "UserAssigned"
+        user_assigned_identity_id           = azurerm_user_assigned_identity.private_aks.id
     }
 
     linux_profile { 
@@ -70,17 +100,22 @@ resource "azurerm_kubernetes_cluster" "private_aks" {
     }
 
     network_profile { 
-        network_plugin              = "azure"
-        service_cidr                = var.aks_service_cidr
-        dns_service_ip              = var.aks_dns_service_ip
-        docker_bridge_cidr          = var.aks_docker_bridge_cidr
-        load_balancer_sku           = "standard"
+        network_plugin                  = "azure"
+        service_cidr                    = var.aks_service_cidr
+        dns_service_ip                  = var.aks_dns_service_ip
+        docker_bridge_cidr              = var.aks_docker_bridge_cidr
+        load_balancer_sku               = "standard"
         outbound_type                   = "userDefinedRouting"
     }
+    
     depends_on = [ 
         azurerm_subnet.private_aks,
         azurerm_route_table.private_aks, 
-        azurerm_subnet_route_table_association.private_aks 
+        azurerm_subnet_route_table_association.private_aks,
+        azurerm_private_dns_zone.private_aks,
+        azurerm_private_dns_zone_virtual_network_link.hub_aks_zone_link,
+        azurerm_private_dns_zone_virtual_network_link.spoke_aks_dns_link,
+        azurerm_role_assignment.private_aks_role
     ]
 }
 

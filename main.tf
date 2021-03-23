@@ -3,13 +3,19 @@ terraform {
   required_providers {
     azurerm = {
       source = "hashicorp/azurerm"
-      version = ">= 2.35"
+      version = ">= 2.52"
     }
+  }
+
+  backend "azurerm" {
+    resource_group_name   = ""
+    storage_account_name  = ""
+    container_name        = ""
+    key                   = ""
   }
 }
 
 provider "azurerm" {
-    version = "=2.35.0"
     features {} 
 }
 
@@ -45,13 +51,16 @@ module "hub_spoke" {
     bind_admin_username             = var.bind_admin_username
     bind_pub_key_name               = var.bind_pub_key_name
 
-    jump_box_name                       = var.jump_box_name
-    jump_box_addr_prefix                = var.jump_box_addr_prefix
-    jump_box_private_ip_addr            = var.jump_box_private_ip_addr
-    jump_box_ssh_source_addr_prefixes   = var.jump_box_ssh_source_addr_prefixes
-    jump_box_vm_size                    = var.jump_box_vm_size
-    jump_box_admin_username             = var.jump_box_admin_username
-    jump_box_pub_key_name               = var.jump_box_pub_key_name
+    jump_host_name                       = var.jump_host_name
+    jump_host_addr_prefix                = var.jump_host_addr_prefix
+    jump_host_private_ip_addr            = var.jump_host_private_ip_addr
+    jump_host_ssh_source_addr_prefixes   = var.jump_host_ssh_source_addr_prefixes
+    jump_host_vm_size                    = var.jump_host_vm_size
+    jump_host_admin_username             = var.jump_host_admin_username
+    jump_host_pub_key_name               = var.jump_host_pub_key_name
+    depends_on = [ 
+      azurerm_resource_group.private_aks_demo
+    ]
 }
 
 # Azure Container Registry, Azure Private DNS and Hub Private Endpoint Subnet
@@ -63,7 +72,6 @@ module "private_acr" {
     acr_vnet_id                     = module.hub_spoke.hub_vnet_id
     acr_addr_prefix                 = var.acr_addr_prefix
     acr_name                        = var.acr_name
-    acr_georeplication_locations    = var.acr_georeplication_locations
     depends_on = [ 
       module.hub_spoke
     ]
@@ -77,7 +85,8 @@ module "private_aks" {
     aks_name                        = var.aks_name
     aks_vnet_name                   = module.hub_spoke.spoke_vnet_name
     aks_subnet_addr_prefix          = var.aks_subnet_addr_prefix
-    custom_dns_vnet_id              = module.hub_spoke.hub_vnet_id
+    hub_vnet_id                     = module.hub_spoke.hub_vnet_id
+    spoke_vnet_id                   = module.hub_spoke.spoke_vnet_id
     aks_dns_prefix                  = var.aks_dns_prefix
     aks_k8s_version                 = var.aks_k8s_version
     aks_admin_username              = var.aks_admin_username
@@ -99,7 +108,6 @@ resource "azurerm_role_assignment" "private_aks_acr" {
     scope                             = module.private_acr.acr_id
     role_definition_name              = "AcrPull"
     principal_id                      = module.private_aks.private_aks_msi_id
-    skip_service_principal_aad_check  = true
     depends_on = [
       module.private_acr, 
       module.private_aks

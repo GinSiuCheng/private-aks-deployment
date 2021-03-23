@@ -49,11 +49,11 @@ variable "bind_vm_size" {}
 variable "bind_admin_username" {}
 variable "bind_pub_key_name" {}
 
-# Jump box module
-variable "jump_box_name" {}
-variable "jump_box_addr_prefix" {}
-variable "jump_box_private_ip_addr" {}
-variable "jump_box_ssh_source_addr_prefixes" {}
-variable "jump_box_vm_size" {}
-variable "jump_box_admin_username" {}
-variable "jump_box_pub_key_name" {}
+# Jump host module
+variable "jump_host_name" {}
+variable "jump_host_addr_prefix" {}
+variable "jump_host_private_ip_addr" {}
+variable "jump_host_ssh_source_addr_prefixes" {}
+variable "jump_host_vm_size" {}
+variable "jump_host_admin_username" {}
+variable "jump_host_pub_key_name" {}

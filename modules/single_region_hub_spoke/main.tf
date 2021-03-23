@@ -68,17 +68,17 @@ module "bind_dns" {
     bind_pub_key_name               = var.bind_pub_key_name
 }
 
-# Jump Box
-module "jump_boxes" { 
-    source                              = "../jump_boxes"
-    resource_group_name                 = var.resource_group_name
-    location                            = var.location
-    jump_box_name                       = var.jump_box_name
-    jump_box_vnet_name                  = azurerm_virtual_network.hub.name
-    jump_box_addr_prefix                = var.jump_box_addr_prefix
-    jump_box_private_ip_addr            = var.jump_box_private_ip_addr
-    jump_box_ssh_source_addr_prefixes   = var.jump_box_ssh_source_addr_prefixes
-    jump_box_vm_size                    = var.jump_box_vm_size
-    jump_box_admin_username             = var.jump_box_admin_username
-    jump_box_pub_key_name               = var.jump_box_pub_key_name
+# Jump Host
+module "jump_host" { 
+    source                               = "../jump_host"
+    resource_group_name                  = var.resource_group_name
+    location                             = var.location
+    jump_host_name                       = var.jump_host_name
+    jump_host_vnet_name                  = azurerm_virtual_network.hub.name
+    jump_host_addr_prefix                = var.jump_host_addr_prefix
+    jump_host_private_ip_addr            = var.jump_host_private_ip_addr
+    jump_host_ssh_source_addr_prefixes   = var.jump_host_ssh_source_addr_prefixes
+    jump_host_vm_size                    = var.jump_host_vm_size
+    jump_host_admin_username             = var.jump_host_admin_username
+    jump_host_pub_key_name               = var.jump_host_pub_key_name
 }

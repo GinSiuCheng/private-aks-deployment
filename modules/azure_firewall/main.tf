@@ -49,6 +49,21 @@ resource "azurerm_firewall_network_rule_collection" "private_aks" {
             "UDP" 
         ]
     }
+    rule {
+        name = "AzureMonitor"
+        source_addresses = [ 
+            "*" 
+        ]
+        destination_addresses = [ 
+            "AzureMonitor" 
+        ]
+        destination_ports = [ 
+            "443" 
+        ]
+        protocols = [ 
+            "TCP" 
+        ]
+    }
 }
 
 resource "azurerm_firewall_application_rule_collection" "private_aks" { 
@@ -65,5 +80,20 @@ resource "azurerm_firewall_application_rule_collection" "private_aks" {
         fqdn_tags = [ 
             "AzureKubernetesService" 
         ]
+    }
+    rule {
+        name = "Ubuntu_application_rules"
+        source_addresses = [ 
+            "*" 
+        ]
+        target_fqdns = [ 
+            "security.ubuntu.com",
+            "changelogs.ubuntu.com",
+            "azure.archive.ubuntu.com"
+        ]
+        protocol {
+          port = "80"
+          type = "Http"
+        }
     }
 }

@@ -59,13 +59,30 @@ resource "azurerm_user_assigned_identity" "private_aks" {
     location                                        = var.location
 }
 
-resource "azurerm_role_assignment" "private_aks_role" {
-    scope                                           = azurerm_private_dns_zone.private_aks.id
-    role_definition_name                            = "Private DNS Zone Contributor"
-    principal_id                                    = azurerm_user_assigned_identity.private_aks.principal_id
-    depends_on = [
-        azurerm_private_dns_zone.private_aks
+resource "azurerm_role_definition" "private_aks_dns_write" {
+  name        = "DNS Link Creation"
+  scope       = data.azurerm_subscription.primary.id
+  description = "Custom role for DNS Link Creation for private DNS zone"
+  permissions {
+    actions     = [
+        "Microsoft.Network/privateDnsZones/read",
+        "Microsoft.Network/privateDnsZones/write",
+        "Microsoft.Network/privateDnsZones/A/read",
+        "Microsoft.Network/privateDnsZones/A/write",
+        "Microsoft.Network/privateDnsZones/virtualNetworkLinks/read"
     ]
+    not_actions = [
+        "Microsoft.Network/privateDnsZones/delete",
+        "Microsoft.Network/privateDnsZones/A/delete",
+        "Microsoft.Network/privateDnsZones/virtualNetworkLinks/delete",
+    ]
+  }
+}
+
+resource "azurerm_role_assignment" "private_aks_dns_write" {
+  scope              = azurerm_private_dns_zone.private_aks.id
+  role_definition_id = azurerm_role_definition.dns_link_write.role_definition_resource_id
+  principal_id       = azurerm_user_assigned_identity.private_aks.principal_id
 }
 
 # Private AKS Instantiation
@@ -78,7 +95,7 @@ resource "azurerm_kubernetes_cluster" "private_aks" {
     private_cluster_enabled         = true 
     private_dns_zone_id             = azurerm_private_dns_zone.private_aks.id
     node_resource_group             = "${var.aks_name}-node-rg"
-
+                      
     identity { 
         type                                = "UserAssigned"
         user_assigned_identity_id           = azurerm_user_assigned_identity.private_aks.id
@@ -115,7 +132,7 @@ resource "azurerm_kubernetes_cluster" "private_aks" {
         azurerm_private_dns_zone.private_aks,
         azurerm_private_dns_zone_virtual_network_link.hub_aks_zone_link,
         azurerm_private_dns_zone_virtual_network_link.spoke_aks_dns_link,
-        azurerm_role_assignment.private_aks_role
+        azurerm_role_assignment.private_aks_dns_write
     ]
 }
 

@@ -81,7 +81,7 @@ resource "azurerm_role_definition" "private_aks_dns_write" {
 
 resource "azurerm_role_assignment" "private_aks_dns_write" {
   scope              = azurerm_private_dns_zone.private_aks.id
-  role_definition_id = azurerm_role_definition.dns_link_write.role_definition_resource_id
+  role_definition_id = azurerm_role_definition.private_aks_dns_write.role_definition_resource_id
   principal_id       = azurerm_user_assigned_identity.private_aks.principal_id
 }
 

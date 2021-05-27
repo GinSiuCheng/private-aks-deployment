@@ -67,8 +67,8 @@ resource "azurerm_network_security_rule" "AllowBastionHostCommunication" {
   direction                   = "Inbound"
   access                      = "Allow"
   protocol                    = "*"
-  source_port_ranges          = ["8080","5701"]
-  destination_port_ranges     = ["8080","5701"]
+  source_port_ranges          = ["5701","8080"]
+  destination_port_ranges     = ["5701","8080"]
   source_address_prefix       = "VirtualNetwork"
   destination_address_prefix  = "VirtualNetwork"
   resource_group_name         = var.resource_group_name
@@ -108,8 +108,8 @@ resource "azurerm_network_security_rule" "AllowBastionCommunication" {
   direction                   = "Outbound"
   access                      = "Allow"
   protocol                    = "*"
-  source_port_ranges          = ["8080","5701"]
-  destination_port_ranges     = ["8080","5701"]
+  source_port_ranges          = ["5701","8080"]
+  destination_port_ranges     = ["5701","8080"]
   source_address_prefix       = "VirtualNetwork"
   destination_address_prefix  = "VirtualNetwork"
   resource_group_name         = var.resource_group_name
@@ -132,6 +132,16 @@ resource "azurerm_network_security_rule" "AllowGetSessionInformation" {
 resource "azurerm_subnet_network_security_group_association" "example" {
   subnet_id                 = azurerm_subnet.azure_bastion.id
   network_security_group_id = azurerm_network_security_group.azure_bastion.id
+  depends_on = [
+    azurerm_network_security_rule.AllowHttpsInbound,
+    azurerm_network_security_rule.AllowGatewayManagerInbound,
+    azurerm_network_security_rule.AllowAzureLoadBalancerInbound,
+    azurerm_network_security_rule.AllowBastionHostCommunication,
+    azurerm_network_security_rule.AllowSshRdpOutbound,
+    azurerm_network_security_rule.AllowAzureCloudOutbound,
+    azurerm_network_security_rule.AllowBastionCommunication,
+    azurerm_network_security_rule.AllowGetSessionInformation
+  ]
 }
 
 # Azure Bastion Instance

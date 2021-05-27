@@ -53,3 +53,9 @@ variable "aks_default_pool_os_disk_size" {}
 variable "aks_service_cidr" {}
 variable "aks_dns_service_ip" {}
 variable "aks_docker_bridge_cidr" {}
+
+# DES module 
+variable "des_kv_name" {}
+variable "des_key_name" {}
+variable "des_name" {}
+variable "local_ips" {}

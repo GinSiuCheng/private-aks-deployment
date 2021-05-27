@@ -3,7 +3,10 @@ terraform {
   required_providers {
     azurerm = {
       source = "hashicorp/azurerm"
-      version = ">= 2.52"
+      version = ">= 2.60"
+    }
+    time = {
+      version = ">=0.7.1"
     }
   }
 
@@ -77,6 +80,20 @@ module "private_acr" {
     ]
 }
 
+module "disk_encryption_set" { 
+    source                    = "./modules/azure_disk_encryption_set"
+    resource_group_name       = var.resource_group_name
+    location                  = var.location
+    des_kv_name               = var.des_kv_name
+    des_key_name              = var.des_key_name
+    des_name                  = var.des_name 
+    local_ips                 = var.local_ips
+
+    depends_on = [
+      azurerm_resource_group.private_aks_demo
+    ]
+}
+
 # Private AKS Cluster 
 module "private_aks" {
     source                          = "./modules/azure_kubernetes_service"
@@ -99,15 +116,17 @@ module "private_aks" {
     aks_dns_service_ip              = var.aks_dns_service_ip
     aks_docker_bridge_cidr          = var.aks_docker_bridge_cidr
     azure_fw_private_ip             = module.hub_spoke.azure_firewall_private_ip
+    disk_encryption_set_id          = module.disk_encryption_set.id
     depends_on = [ 
-      module.hub_spoke
+      module.hub_spoke,
+      module.disk_encryption_set
     ]
 }
 
 resource "azurerm_role_assignment" "private_aks_acr" {
     scope                             = module.private_acr.acr_id
     role_definition_name              = "AcrPull"
-    principal_id                      = module.private_aks.private_aks_msi_id
+    principal_id                      = module.private_aks.private_aks_kubelet_msi_id
     depends_on = [
       module.private_acr, 
       module.private_aks

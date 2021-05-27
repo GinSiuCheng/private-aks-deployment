@@ -80,9 +80,23 @@ resource "azurerm_role_definition" "private_aks_dns_write" {
 }
 
 resource "azurerm_role_assignment" "private_aks_dns_write" {
-  scope              = azurerm_private_dns_zone.private_aks.id
-  role_definition_id = azurerm_role_definition.private_aks_dns_write.role_definition_resource_id
-  principal_id       = azurerm_user_assigned_identity.private_aks.principal_id
+    scope              = azurerm_private_dns_zone.private_aks.id
+    role_definition_id = azurerm_role_definition.private_aks_dns_write.role_definition_resource_id
+    principal_id       = azurerm_user_assigned_identity.private_aks.principal_id
+}
+
+resource "azurerm_role_assignment" "private_aks_des_reader" {
+    scope                = var.disk_encryption_set_id
+    role_definition_name = "Reader"
+    principal_id       = azurerm_user_assigned_identity.private_aks.principal_id
+}
+
+# Wait 1min for role assignment to propagate 
+resource "time_sleep" "wait_2min" {
+    depends_on = [
+      azurerm_role_assignment.private_aks_dns_write
+    ]
+    create_duration = "120s"
 }
 
 # Private AKS Instantiation
@@ -95,7 +109,9 @@ resource "azurerm_kubernetes_cluster" "private_aks" {
     private_cluster_enabled         = true 
     private_dns_zone_id             = azurerm_private_dns_zone.private_aks.id
     node_resource_group             = "${var.aks_name}-node-rg"
-                      
+    disk_encryption_set_id          = var.disk_encryption_set_id
+    tags                            = var.tags
+
     identity { 
         type                                = "UserAssigned"
         user_assigned_identity_id           = azurerm_user_assigned_identity.private_aks.id
@@ -113,11 +129,14 @@ resource "azurerm_kubernetes_cluster" "private_aks" {
         node_count                  = var.aks_default_pool_node_count
         vm_size                     = var.aks_default_pool_vm_size
         os_disk_size_gb             = var.aks_default_pool_os_disk_size
+        availability_zones          = var.availability_zones
         vnet_subnet_id              = azurerm_subnet.private_aks.id
+        enable_host_encryption      = true 
+        tags                        = var.tags 
     }
 
     network_profile { 
-        network_plugin                  = "azure"
+        network_plugin                  = var.aks_network_plugin
         service_cidr                    = var.aks_service_cidr
         dns_service_ip                  = var.aks_dns_service_ip
         docker_bridge_cidr              = var.aks_docker_bridge_cidr
@@ -132,14 +151,18 @@ resource "azurerm_kubernetes_cluster" "private_aks" {
         azurerm_private_dns_zone.private_aks,
         azurerm_private_dns_zone_virtual_network_link.hub_aks_zone_link,
         azurerm_private_dns_zone_virtual_network_link.spoke_aks_dns_link,
-        azurerm_role_assignment.private_aks_dns_write
+        azurerm_role_assignment.private_aks_dns_write,
+        time_sleep.wait_2min
     ]
 }
 
-data "azurerm_user_assigned_identity" "private_aks" {
-    name                            = "${azurerm_kubernetes_cluster.private_aks.name}-agentpool"
-    resource_group_name             = "${var.aks_name}-node-rg"
-    depends_on = [ 
-        azurerm_kubernetes_cluster.private_aks
-    ]
+resource "azurerm_kubernetes_cluster_node_pool" "application" {
+    name                    = "appnodepool"
+    kubernetes_cluster_id   = azurerm_kubernetes_cluster.private_aks.id 
+    vm_size                 = "Standard_DS2_v2"
+    node_count              = 3
+    vnet_subnet_id          = azurerm_subnet.private_aks.id
+    enable_host_encryption  = true 
+    availability_zones      = var.availability_zones
+    tags                    = var.tags
 }

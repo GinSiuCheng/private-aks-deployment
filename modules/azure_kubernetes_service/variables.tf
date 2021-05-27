@@ -99,3 +99,19 @@ variable "azure_fw_private_ip" {
     type        = string 
     description = "Azure FW Private IP"
 }
+
+variable "availability_zones" { 
+    description = "AZs for nodes"
+    default     = ["1","2","3"]
+}
+
+variable "disk_encryption_set_id" {
+    type        = string
+    description = "Disk Encryption Set ID"
+}
+
+variable "aks_network_plugin" {
+    type        = string
+    description = "AKS Network Plugin Setting, defaults to Azure CNI"
+    default     = "azure"
+}

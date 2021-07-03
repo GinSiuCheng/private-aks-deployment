@@ -1,4 +1,8 @@
 # Private AKS TF Module 
+data "azurerm_resource_group" "private_aks_demo" {
+    name = var.resource_group_name
+}
+
 # Subnet for AKS 
 resource "azurerm_subnet" "private_aks" {
     name                                            = "${var.aks_name}-subnet"
@@ -8,19 +12,32 @@ resource "azurerm_subnet" "private_aks" {
     enforce_private_link_endpoint_network_policies  = true
 } 
 
+resource "azurerm_network_security_group" "private_aks" {
+  name                = "private-aks-nsg"
+  location            = var.location
+  resource_group_name = var.resource_group_name
+}
+
+resource "azurerm_subnet_network_security_group_association" "private_aks" {
+  subnet_id                 = azurerm_subnet.private_aks.id
+  network_security_group_id = azurerm_network_security_group.private_aks.id
+}
+
 # Route table for AKS Subnet
 resource "azurerm_route_table" "private_aks" { 
     name                    = "${var.aks_name}-route-table"
     resource_group_name     = var.resource_group_name
     location                = var.location
     disable_bgp_route_propagation = false
+}
 
-    route { 
-        name                    = "Internet-Outbound"
-        address_prefix          = "0.0.0.0/0"
-        next_hop_type           = "VirtualAppliance"
-        next_hop_in_ip_address  = var.azure_fw_private_ip
-    }
+resource "azurerm_route" "internet_egress" {
+    name                    = "Internet-Outbound"
+    resource_group_name     = var.resource_group_name
+    route_table_name        = azurerm_route_table.private_aks.name 
+    address_prefix          = "0.0.0.0/0"
+    next_hop_type           = "VirtualAppliance"
+    next_hop_in_ip_address  = var.azure_fw_private_ip
 }
 
 resource "azurerm_subnet_route_table_association" "private_aks" {
@@ -50,7 +67,7 @@ resource "azurerm_private_dns_zone_virtual_network_link" "spoke_aks_dns_link" {
     registration_enabled                            = false
 }
 
-# UserAssigned Identity
+# UserAssigned Identity and Permissions
 data "azurerm_subscription" "primary" {}
 
 resource "azurerm_user_assigned_identity" "private_aks" {
@@ -59,44 +76,35 @@ resource "azurerm_user_assigned_identity" "private_aks" {
     location                                        = var.location
 }
 
-resource "azurerm_role_definition" "private_aks_dns_write" {
-  name        = "DNS Link Creation"
-  scope       = data.azurerm_subscription.primary.id
-  description = "Custom role for DNS Link Creation for private DNS zone"
-  permissions {
-    actions     = [
-        "Microsoft.Network/privateDnsZones/read",
-        "Microsoft.Network/privateDnsZones/write",
-        "Microsoft.Network/privateDnsZones/A/read",
-        "Microsoft.Network/privateDnsZones/A/write",
-        "Microsoft.Network/privateDnsZones/virtualNetworkLinks/read"
-    ]
-    not_actions = [
-        "Microsoft.Network/privateDnsZones/delete",
-        "Microsoft.Network/privateDnsZones/A/delete",
-        "Microsoft.Network/privateDnsZones/virtualNetworkLinks/delete",
-    ]
-  }
+# BYO Private DNS Zone permissions
+resource "azurerm_role_assignment" "private_aks_dns_contributor" {
+    scope                = azurerm_private_dns_zone.private_aks.id
+    role_definition_name = "Private DNS Zone Contributor"
+    principal_id         = azurerm_user_assigned_identity.private_aks.principal_id
 }
 
-resource "azurerm_role_assignment" "private_aks_dns_write" {
-    scope              = azurerm_private_dns_zone.private_aks.id
-    role_definition_id = azurerm_role_definition.private_aks_dns_write.role_definition_resource_id
-    principal_id       = azurerm_user_assigned_identity.private_aks.principal_id
+# BYO Subnet, Route Table, SLB and NSG permissions
+resource "azurerm_role_assignment" "private_aks_network_contributor" {
+    scope                = data.azurerm_resource_group.private_aks_demo.id
+    role_definition_name = "Network Contributor"
+    principal_id         = azurerm_user_assigned_identity.private_aks.principal_id
 }
 
+# Host-based encryption and BYOK for Disk Encryption
 resource "azurerm_role_assignment" "private_aks_des_reader" {
     scope                = var.disk_encryption_set_id
     role_definition_name = "Reader"
-    principal_id       = azurerm_user_assigned_identity.private_aks.principal_id
+    principal_id         = azurerm_user_assigned_identity.private_aks.principal_id
 }
 
-# Wait 1min for role assignment to propagate 
-resource "time_sleep" "wait_2min" {
+# Wait 5min for role assignment to propagate 
+resource "time_sleep" "wait_5min" {
     depends_on = [
-      azurerm_role_assignment.private_aks_dns_write
+      azurerm_role_assignment.private_aks_dns_contributor,
+      azurerm_role_assignment.private_aks_des_reader,
+      azurerm_role_assignment.private_aks_network_contributor
     ]
-    create_duration = "120s"
+    create_duration = "300s"
 }
 
 # Private AKS Instantiation
@@ -104,7 +112,8 @@ resource "azurerm_kubernetes_cluster" "private_aks" {
     name                            = var.aks_name
     location                        = var.location 
     resource_group_name             = var.resource_group_name
-    dns_prefix                      = var.aks_dns_prefix
+    dns_prefix                      = var.aks_dns_prefix    # Produces an a record of <dns-prefix>-<random guid>
+    # dns_prefix_private_cluster      = var.aks_dns_prefix  # Produces an a record of <dns-prefix-private-cluster> (no random guid)
     kubernetes_version              = var.aks_k8s_version
     private_cluster_enabled         = true 
     private_dns_zone_id             = azurerm_private_dns_zone.private_aks.id
@@ -121,6 +130,17 @@ resource "azurerm_kubernetes_cluster" "private_aks" {
         admin_username              = var.aks_admin_username
         ssh_key { 
             key_data                = file(var.aks_pub_key_name)
+        }
+    }
+
+    dynamic "role_based_access_control" {
+        for_each = var.aks_aad_rbac.enabled ? [1] : []
+        content {
+            enabled = var.aks_aad_rbac.enabled
+            azure_active_directory {
+                managed = true 
+                admin_group_object_ids = var.aks_aad_rbac.admin_group_object_ids
+            }
         }
     }
 
@@ -147,12 +167,12 @@ resource "azurerm_kubernetes_cluster" "private_aks" {
     depends_on = [ 
         azurerm_subnet.private_aks,
         azurerm_route_table.private_aks, 
+        azurerm_route.internet_egress,
         azurerm_subnet_route_table_association.private_aks,
         azurerm_private_dns_zone.private_aks,
         azurerm_private_dns_zone_virtual_network_link.hub_aks_zone_link,
         azurerm_private_dns_zone_virtual_network_link.spoke_aks_dns_link,
-        azurerm_role_assignment.private_aks_dns_write,
-        time_sleep.wait_2min
+        time_sleep.wait_5min
     ]
 }
 

@@ -3,7 +3,7 @@ terraform {
   required_providers {
     azurerm = {
       source = "hashicorp/azurerm"
-      version = ">= 2.60"
+      version = "=2.60"
     }
     time = {
       version = ">=0.7.1"
@@ -112,11 +112,13 @@ module "private_aks" {
     aks_default_pool_node_count     = var.aks_default_pool_node_count
     aks_default_pool_vm_size        = var.aks_default_pool_vm_size
     aks_default_pool_os_disk_size   = var.aks_default_pool_os_disk_size
+    aks_network_plugin              = var.aks_network_plugin
     aks_service_cidr                = var.aks_service_cidr
     aks_dns_service_ip              = var.aks_dns_service_ip
     aks_docker_bridge_cidr          = var.aks_docker_bridge_cidr
     azure_fw_private_ip             = module.hub_spoke.azure_firewall_private_ip
     disk_encryption_set_id          = module.disk_encryption_set.id
+    aks_aad_rbac                    = var.aks_aad_rbac
     depends_on = [ 
       module.hub_spoke,
       module.disk_encryption_set

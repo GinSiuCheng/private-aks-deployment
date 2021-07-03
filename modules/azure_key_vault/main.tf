@@ -9,6 +9,7 @@ resource "azurerm_key_vault" "des_kv" {
     tenant_id                   = data.azurerm_client_config.current.tenant_id
     sku_name                    = "standard"
     enabled_for_disk_encryption = true
+    soft_delete_enabled         = true 
     purge_protection_enabled    = true
 
     # Allow Azure Trusted Services 
@@ -29,6 +30,7 @@ resource "azurerm_key_vault_access_policy" "current_user" {
         "Get",
         "Create",
         "Delete",
+        "Purge",
         "Recover"
     ]
 }

@@ -115,3 +115,14 @@ variable "aks_network_plugin" {
     description = "AKS Network Plugin Setting, defaults to Azure CNI"
     default     = "azure"
 }
+
+variable "aks_aad_rbac" {
+    type        = object({
+        enabled                = bool 
+        admin_group_object_ids = tuple([string])
+    })
+    default     = {
+        enabled                = false 
+        admin_group_object_ids = null 
+    }
+}

@@ -28,7 +28,7 @@ resource "azurerm_network_security_rule" "AllowHttpsInbound" {
   direction                   = "Inbound"
   access                      = "Allow"
   protocol                    = "Tcp"
-  source_port_range           = "443"
+  source_port_range           = "*"
   destination_port_range      = "443"
   source_address_prefix       = "Internet"
   destination_address_prefix  = "*"
@@ -41,7 +41,7 @@ resource "azurerm_network_security_rule" "AllowGatewayManagerInbound" {
   direction                   = "Inbound"
   access                      = "Allow"
   protocol                    = "Tcp"
-  source_port_range           = "443"
+  source_port_range           = "*"
   destination_port_range      = "443"
   source_address_prefix       = "GatewayManager"
   destination_address_prefix  = "*"
@@ -67,7 +67,7 @@ resource "azurerm_network_security_rule" "AllowBastionHostCommunication" {
   direction                   = "Inbound"
   access                      = "Allow"
   protocol                    = "*"
-  source_port_ranges          = ["5701","8080"]
+  source_port_range           = "*"
   destination_port_ranges     = ["5701","8080"]
   source_address_prefix       = "VirtualNetwork"
   destination_address_prefix  = "VirtualNetwork"

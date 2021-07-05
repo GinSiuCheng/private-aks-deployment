@@ -20,6 +20,8 @@ variable "azurebastion_addr_prefix" {}
 # Private ACR module 
 variable "acr_addr_prefix" {}
 variable "acr_name" {}
+variable "acr_key_name" {}
+variable "acr_kv_name" {}
 
 # BIND DNS module 
 variable "bind_dns_name" {}

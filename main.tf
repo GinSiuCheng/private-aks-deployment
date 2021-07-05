@@ -75,6 +75,9 @@ module "private_acr" {
     acr_vnet_id                     = module.hub_spoke.hub_vnet_id
     acr_addr_prefix                 = var.acr_addr_prefix
     acr_name                        = var.acr_name
+    acr_kv_name                     = var.acr_kv_name
+    acr_key_name                    = var.acr_key_name
+    local_ips                       = var.local_ips
     depends_on = [ 
       module.hub_spoke
     ]

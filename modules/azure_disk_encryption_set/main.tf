@@ -29,6 +29,7 @@ resource "azurerm_key_vault_access_policy" "current_user" {
         "Get",
         "Create",
         "Delete",
+        "Purge",
         "Recover"
     ]
 }

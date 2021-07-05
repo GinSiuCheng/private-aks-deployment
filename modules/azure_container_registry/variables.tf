@@ -32,3 +32,18 @@ variable "acr_name" {
     type        = string
     description = "Name of the ACR"
 }
+
+variable "acr_kv_name" {
+    type        = string
+    description = "Name of ACR KV"
+}
+
+variable "acr_key_name" {
+    type        = string
+    description = "Name of ACR KV Key"
+}
+
+variable "local_ips" {
+    type        = tuple([string])
+    description = "TF Deployment IPs"
+}

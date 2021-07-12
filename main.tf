@@ -83,6 +83,15 @@ module "private_acr" {
     ]
 }
 
+# Log Analytics for Container Insights 
+module "log_analytics_workspace" {
+    source                    = "./modules/log_analytics_workspace"
+    law_name                  = var.law_name 
+    resource_group_name       = var.resource_group_name
+    location                  = var.location
+}
+
+# Disk encryption set for AKS 
 module "disk_encryption_set" { 
     source                    = "./modules/azure_disk_encryption_set"
     resource_group_name       = var.resource_group_name
@@ -122,6 +131,11 @@ module "private_aks" {
     azure_fw_private_ip             = module.hub_spoke.azure_firewall_private_ip
     disk_encryption_set_id          = module.disk_encryption_set.id
     aks_aad_rbac                    = var.aks_aad_rbac
+    aks_monitoring                  = {
+      enabled                         = true 
+      log_analytics_workspace_id      = module.log_analytics_workspace.log_analytics_workspace_id
+    }
+    
     depends_on = [ 
       module.hub_spoke,
       module.disk_encryption_set

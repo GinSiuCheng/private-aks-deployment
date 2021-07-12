@@ -25,10 +25,11 @@ resource "azurerm_subnet_network_security_group_association" "private_aks" {
 
 # Route table for AKS Subnet
 resource "azurerm_route_table" "private_aks" { 
-    name                    = "${var.aks_name}-route-table"
-    resource_group_name     = var.resource_group_name
-    location                = var.location
+    name                          = "${var.aks_name}-route-table"
+    resource_group_name           = var.resource_group_name
+    location                      = var.location
     disable_bgp_route_propagation = false
+    tags                          = var.tags 
 }
 
 resource "azurerm_route" "internet_egress" {
@@ -133,6 +134,7 @@ resource "azurerm_kubernetes_cluster" "private_aks" {
         }
     }
 
+    # AAD Auth Integration 
     dynamic "role_based_access_control" {
         for_each = var.aks_aad_rbac.enabled ? [1] : []
         content {
@@ -140,6 +142,17 @@ resource "azurerm_kubernetes_cluster" "private_aks" {
             azure_active_directory {
                 managed = true 
                 admin_group_object_ids = var.aks_aad_rbac.admin_group_object_ids
+            }
+        }
+    }
+
+    # Container Insights 
+    addon_profile {
+        dynamic "oms_agent" {
+            for_each = var.aks_monitoring.enabled ? [1] : []
+            content {
+                enabled                    = var.aks_monitoring.enabled 
+                log_analytics_workspace_id = var.aks_monitoring.log_analytics_workspace_id
             }
         }
     }

@@ -126,3 +126,14 @@ variable "aks_aad_rbac" {
         admin_group_object_ids = null 
     }
 }
+
+variable "aks_monitoring" {
+    type        = object({
+        enabled                    = bool 
+        log_analytics_workspace_id = string 
+    })
+    default     = {
+        enabled                     = false 
+        log_analytics_workspace_id  = null 
+    }
+}

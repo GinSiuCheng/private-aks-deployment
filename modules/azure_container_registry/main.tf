@@ -52,25 +52,13 @@ resource "azurerm_key_vault_access_policy" "current_user" {
         "Get",
         "Create",
         "Delete",
+        "Decrypt",
+        "Backup",
         "List",
         "Purge",
-        "Recover"
-    ]
-}
-
-# Encryption Key 
-resource "azurerm_key_vault_key" "acr_key" {
-    name         = var.acr_key_name
-    key_size     = 2048
-    key_type     = "RSA"
-    key_vault_id = azurerm_key_vault.acr.id
-    key_opts = [
-        "decrypt",
-        "encrypt",
-        "sign",
-        "unwrapKey",
-        "verify",
-        "wrapKey"
+        "Recover",
+        "Restore",
+        "Update"
     ]
 }
 
@@ -88,14 +76,35 @@ resource "azurerm_key_vault_access_policy" "acr_uai" {
 }
 
 # Wait 2min for policy to propagate 
-resource "time_sleep" "wait_5min" {
+resource "time_sleep" "wait_2min" {
     depends_on = [
         azurerm_key_vault_access_policy.acr_uai,
         azurerm_key_vault_access_policy.current_user
     ]
-    create_duration = "300s"
+    create_duration = "120s"
 }
 
+# Encryption Key 
+resource "azurerm_key_vault_key" "acr_key" {
+    name         = var.acr_key_name
+    key_size     = 2048
+    key_type     = "RSA"
+    key_vault_id = azurerm_key_vault.acr.id
+    key_opts = [
+        "decrypt",
+        "encrypt",
+        "sign",
+        "unwrapKey",
+        "verify",
+        "wrapKey"
+    ]
+
+    depends_on = [
+        azurerm_key_vault_access_policy.current_user,
+        azurerm_key_vault_access_policy.acr_uai,
+        time_sleep.wait_2min
+    ]
+}
 
 # ACR 
 resource "azurerm_container_registry" "acr_instance" { 
@@ -103,7 +112,7 @@ resource "azurerm_container_registry" "acr_instance" {
     resource_group_name                             = var.resource_group_name
     location                                        = var.location
     sku                                             = "Premium"
-
+    
     identity {
         type         = "SystemAssigned, UserAssigned"
         identity_ids = [
@@ -122,7 +131,8 @@ resource "azurerm_container_registry" "acr_instance" {
     }
     
     depends_on = [
-      time_sleep.wait_5min
+      time_sleep.wait_2min,
+      azurerm_key_vault_key.acr_key
     ]
 }
 
@@ -133,14 +143,18 @@ resource "azurerm_container_registry" "acr_instance" {
 resource "null_resource" "system_identity_and_fw_enablement" {
     provisioner "local-exec" {
         command = <<EOS
-        principalId=$(az acr identity show --name ${azurerm_container_registry.acr_instance.name} --query principalId --output tsv)
-        tenantId=$(az acr identity show --name ${azurerm_container_registry.acr_instance.name} --query tenantId --output tsv)
+        principalId=$(az acr identity show --name ${azurerm_container_registry.acr_instance.name} --query principalId --output tsv | tr -d "\r");
+        tenantId=$(az acr identity show --name ${azurerm_container_registry.acr_instance.name} --query tenantId --output tsv | tr -d "\r");
         az keyvault set-policy -n ${azurerm_key_vault.acr.name} --key-permissions get unwrapKey wrapKey --object-id $principalId;
+        sleep 2m;
+        az acr encryption rotate-key -g ${var.resource_group_name} -n ${azurerm_container_registry.acr_instance.name} --identity '[system]' --key-encryption-key ${azurerm_key_vault_key.acr_key.id};
         az keyvault update -g ${var.resource_group_name} -n ${azurerm_key_vault.acr.name} --bypass "AzureServices";
         az keyvault update -g ${var.resource_group_name} -n ${azurerm_key_vault.acr.name} --default-action "Deny";
+        az keyvault network-rule add -g ${var.resource_group_name} -n ${azurerm_key_vault.acr.name} --ip-address ${var.local_ips[0]};
         EOS
     }
     depends_on = [
+        time_sleep.wait_2min,
         azurerm_key_vault.acr,
         azurerm_container_registry.acr_instance
     ]
@@ -165,7 +179,8 @@ resource "azurerm_private_endpoint" "acr" {
         is_manual_connection                        = false
     }
     depends_on = [
-        azurerm_subnet.acr
+        azurerm_subnet.acr,
+        null_resource.system_identity_and_fw_enablement
     ]
 }
 

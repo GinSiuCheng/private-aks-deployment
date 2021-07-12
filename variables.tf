@@ -63,3 +63,6 @@ variable "des_kv_name" {}
 variable "des_key_name" {}
 variable "des_name" {}
 variable "local_ips" {}
+
+# Log Analytics Workspace 
+variable "law_name" {}

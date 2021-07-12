@@ -143,14 +143,14 @@ resource "azurerm_container_registry" "acr_instance" {
 resource "null_resource" "system_identity_and_fw_enablement" {
     provisioner "local-exec" {
         command = <<EOS
-        principalId=$(az acr identity show --name ${azurerm_container_registry.acr_instance.name} --query principalId --output tsv | tr -d "\r");
-        tenantId=$(az acr identity show --name ${azurerm_container_registry.acr_instance.name} --query tenantId --output tsv | tr -d "\r");
-        az keyvault set-policy -n ${azurerm_key_vault.acr.name} --key-permissions get unwrapKey wrapKey --object-id $principalId;
-        sleep 2m;
-        az acr encryption rotate-key -g ${var.resource_group_name} -n ${azurerm_container_registry.acr_instance.name} --identity '[system]' --key-encryption-key ${azurerm_key_vault_key.acr_key.id};
+        principalId=$(az acr identity show --name ${azurerm_container_registry.acr_instance.name} --query principalId --output tsv | tr -d "\r")
+        tenantId=$(az acr identity show --name ${azurerm_container_registry.acr_instance.name} --query tenantId --output tsv | tr -d "\r")
+        az keyvault set-policy -n ${azurerm_key_vault.acr.name} --key-permissions get unwrapKey wrapKey --object-id $principalId
+        sleep 2m
+        az acr encryption rotate-key -g ${var.resource_group_name} -n ${azurerm_container_registry.acr_instance.name} --identity '[system]' --key-encryption-key ${azurerm_key_vault_key.acr_key.id}
         az keyvault update -g ${var.resource_group_name} -n ${azurerm_key_vault.acr.name} --bypass "AzureServices";
         az keyvault update -g ${var.resource_group_name} -n ${azurerm_key_vault.acr.name} --default-action "Deny";
-        az keyvault network-rule add -g ${var.resource_group_name} -n ${azurerm_key_vault.acr.name} --ip-address ${var.local_ips[0]};
+        az keyvault network-rule add -g ${var.resource_group_name} -n ${azurerm_key_vault.acr.name} --ip-address ${var.local_ips[0]}
         EOS
     }
     depends_on = [
